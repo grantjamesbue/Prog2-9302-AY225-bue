@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Attendance Record</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="login-container">
+        <h2>Attendance Record</h2>
+        
+        <form onsubmit="handleLogin(event)">
+            <input type="text" id="username" placeholder="Enter Username" required>
+            <input type="password" id="password" placeholder="Enter Password" required>
+            <button type="submit">LOG IN</button>
+        </form>
+
+        <p id="message"></p>
+        <p id="timestamp"></p>
+
+        <button id="downloadBtn" style="display:none;">Download Attendance</button>
+
+        <h3>Attendance Log</h3>
+        <table id="attendanceTable">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Time In</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Attendance records will appear here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
