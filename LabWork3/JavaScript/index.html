@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Prelim Grade Calculator - Time Warp</title>
+<style>
+body, html {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+    font-family: Arial, sans-serif;
+}
+#starfield {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+.container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+    width: 400px;
+    padding: 20px;
+    background: rgba(0,0,0,0.65);
+    border: 3px solid cyan;
+    border-radius: 15px;
+    color: cyan;
+    z-index: 1;
+    box-shadow:0 0 40px rgba(0,255,255,0.25),0 0 80px rgba(140,0,255,0.25),inset 0 0 30px rgba(0,255,255,0.15);
+    transition: all 1s ease;
+}
+.container.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    animation: nebulaPulse 6s ease-in-out infinite;
+}
+@keyframes nebulaPulse {
+    0%,100% { box-shadow:0 0 40px rgba(0,255,255,0.25),0 0 80px rgba(140,0,255,0.25),inset 0 0 30px rgba(0,255,255,0.15);}
+    50% { box-shadow:0 0 60px rgba(0,255,255,0.4),0 0 120px rgba(140,0,255,0.4),inset 0 0 40px rgba(0,255,255,0.25);}
+}
+.title { text-align:center; font-weight:bold; margin-bottom:20px; border:2px solid cyan; padding:10px; border-radius:10px; }
+.field { display:flex; justify-content:space-between; margin-bottom:12px; }
+input { width:120px; text-align:center; background:gray; color:black; border:2px solid cyan; border-radius:5px; padding:5px; }
+.buttons { text-align:center; margin:15px 0; }
+button { background: rgb(50,0,80); color: cyan; border:2px solid cyan; padding:8px 20px; margin:0 10px; font-weight:bold; cursor:pointer; border-radius:8px; }
+button:hover { opacity:0.85; }
+.result { background:gray; color:black; padding:10px; border:2px solid cyan; border-radius:10px; height:250px; overflow-y:auto; white-space:pre-line; }
+.bold { font-weight:bold; }
+.warning { color:red; font-weight:bold; }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<div class="container" id="calculator">
+    <div class="title">🌌 PRELIM GRADE CALCULATOR 🌠</div>
+
+    <div class="field"><label>Attendance:</label><input type="number" id="attendance" oninput="fixAttendance(this)"></div>
+    <div class="field"><label>Lab Work 1:</label><input type="number" id="lab1" oninput="fixLabInput(this)"></div>
+    <div class="field"><label>Lab Work 2:</label><input type="number" id="lab2" oninput="fixLabInput(this)"></div>
+    <div class="field"><label>Lab Work 3:</label><input type="number" id="lab3" oninput="fixLabInput(this)"></div>
+
+    <div class="buttons">
+        <button onclick="computeGrades()">Compute</button>
+        <button onclick="clearAll()">Clear</button>
+    </div>
+
+    <div class="result" id="result"></div>
+</div>
+
+<script>
+/* ===== STARFIELD WARP ===== */
+const canvas = document.getElementById('starfield');
+const ctx = canvas.getContext('2d');
+let stars = [], numStars=500, width=window.innerWidth, height=window.innerHeight;
+canvas.width = width; canvas.height = height;
+for(let i=0;i<numStars;i++){ stars.push({x:Math.random()*width-width/2, y:Math.random()*height-height/2, z:Math.random()*width}); }
+function animateStars(speed){
+    ctx.fillStyle='#050511'; ctx.fillRect(0,0,width,height); ctx.fillStyle='white';
+    for(let i=0;i<numStars;i++){
+        let s=stars[i]; s.z-=speed;
+        if(s.z<=0){ s.x=Math.random()*width-width/2; s.y=Math.random()*height-height/2; s.z=width; }
+        let sx=(s.x/s.z)*width+width/2, sy=(s.y/s.z)*height+height/2, r=(1-s.z/width)*3;
+        ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2); ctx.fill();
+    }
+}
+let warpStart=performance.now();
+function warpLoop(time){ animateStars(10); if(time-warpStart<4500){ requestAnimationFrame(warpLoop); } 
+else{ document.getElementById('calculator').classList.add('show'); function slowStars(){ animateStars(1); requestAnimationFrame(slowStars);} slowStars(); } }
+requestAnimationFrame(warpLoop);
+window.addEventListener('resize', ()=>{ width=window.innerWidth; height=window.innerHeight; canvas.width=width; canvas.height=height; stars=[]; for(let i=0;i<numStars;i++){ stars.push({x:Math.random()*width-width/2, y:Math.random()*height-height/2, z:Math.random()*width}); }});
+
+/* ===== INPUT FIXERS ===== */
+function fixAttendance(input){ let value=Number(input.value); if(isNaN(value)){ input.value=""; return;} value=Math.floor(value); if(value>5) value=5; if(value<0) value=0; input.value=value; }
+function fixLabInput(input){ let value=Number(input.value); if(isNaN(value)){ input.value=""; return;} value=Math.floor(value); if(value>100) value=100; if(value<0) value=0; input.value=value; }
+
+/* ===== GRADE CALCULATION ===== */
+function computeGrades(){
+    const attendanceRaw=Number(document.getElementById("attendance").value);
+    const lab1=Number(document.getElementById("lab1").value);
+    const lab2=Number(document.getElementById("lab2").value);
+    const lab3=Number(document.getElementById("lab3").value);
+    const result=document.getElementById("result");
+
+    if([attendanceRaw, lab1, lab2, lab3].some(isNaN)){ result.innerHTML='<span class="warning">⚠ Please enter all valid numbers!</span>'; return; }
+
+    const attendancePercent=attendanceRaw*20;
+    const labAverage=(lab1+lab2+lab3)/3;
+    const classStanding=(attendancePercent*0.4)+(labAverage*0.6);
+
+    let output='<span class="bold">--- RESULTS ---</span><br><br>';
+    output+=`Attendance: ${attendanceRaw} / 5<br>`;
+    output+=`Attendance Percentage: ${attendancePercent}%<br><br>`;
+    output+=`Lab Average: ${labAverage.toFixed(2)}<br>`;
+    output+=`<span class="bold">Class Standing:</span> ${classStanding.toFixed(2)}<br><br>`;
+
+    // ===== ATTENDANCE LOGIC =====
+    if(attendanceRaw===1){
+        output+='<span class="warning">⚠ FAILED DUE TO LOW ATTENDANCE (1 day only)</span><br><br>';
+        output+='<span class="bold">Remark:</span> FAILED<br><br>';
+        output+='<span class="bold">Required Prelim Exam for 75:</span> FAILED DUE TO LOW ATTENDANCE<br><br>';
+        output+='<span class="bold">Required Prelim Exam for 100:</span> FAILED DUE TO LOW ATTENDANCE';
+        result.innerHTML=output; return;
+    } else if(attendanceRaw===2 || attendanceRaw===3){
+        output+='<span class="warning">⚠ warning: "Attendance is low. Please make sure to attend more next time.</span><br><br>';
+    }
+
+    // ===== LAB WARNING =====
+    if(labAverage<75){ output+='<span class="warning">⚠ WARNING: Your lab work average is low. You still have a chance to fail due to poor lab performance.</span><br><br>'; }
+
+    // ===== REQUIRED PRELIM CALC =====
+    const required75=(75-(classStanding*0.7))/0.3;
+    const required100=(100-(classStanding*0.7))/0.3;
+    let msg75=required75<=75?"Already passed 75 – just do your best": required75>100?"Impossible to achieve": required75.toFixed(2);
+    const msg100=required100<=0?"Already passed 100 – maintain your score": required100>100?"Impossible to achieve": required100.toFixed(2);
+    const remark=classStanding>=75?"PASSED":"FAILED";
+
+    output+=`<span class="bold">Remark:</span> ${remark}<br><br>`;
+    output+=`<span class="bold">Required Prelim Exam for 75:</span> ${msg75}<br><br>`;
+    output+=`<span class="bold">Required Prelim Exam for 100:</span> ${msg100}`;
+
+    result.innerHTML=output;
+}
+
+/* ===== CLEAR ===== */
+function clearAll(){ document.getElementById("attendance").value=""; document.getElementById("lab1").value=""; document.getElementById("lab2").value=""; document.getElementById("lab3").value=""; document.getElementById("result").innerHTML=""; }
+</script>
+
+</body>
+</html>
